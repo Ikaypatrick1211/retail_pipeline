@@ -12,11 +12,11 @@ def main():
         path = sys.argv[1]
 
     try:
-        with open(path) as f:
+        with open(path, newline="") as f:
             rows = list(csv.DictReader(f))
     except FileNotFoundError:
         print("Could not find the file:", path)
-        return
+        sys.exit(1)
 
     clean, rejected = validate_records(rows)
     print_report(clean, rejected)
@@ -24,7 +24,6 @@ def main():
     active = get_active(clean)
     print(f"\nActive sales:           {len(active)}")
     print(f"Total net margin:       ${sum(get_net_margins(active)):,.2f}")
-
 
 
 if __name__ == "__main__":

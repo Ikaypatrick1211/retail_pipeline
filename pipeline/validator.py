@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from pipeline.schema import TransactionRecord
 
@@ -7,28 +8,33 @@ def validate_records(rows):
     clean = []
     rejected = []
 
-    for row in rows:
-        branch_id = row["branch_id"].strip()
-        tier = row["customer_tier"].strip().title()
+    # Row 1 of the file is the header, so data starts on row 2
+    for row_num, row in enumerate(rows, start=2):
+        branch_id = (row.get("branch_id") or "").strip()
+        tier = (row.get("customer_tier") or "").strip().title()
 
         if branch_id == "":
-            rejected.append("missing branch ID")
+            rejected.append(f"row {row_num}: missing branch ID")
             continue
 
         if tier not in ("Gold", "Silver", "Bronze"):
-            rejected.append("invalid customer tier")
+            rejected.append(f"row {row_num}: invalid customer tier")
             continue
 
         try:
-            date = datetime.strptime(row["transaction_date"], "%Y-%m-%d").date()
-            items = int(row["item_count"])
-            revenue = float(row["revenue"])
+            date = datetime.strptime(row.get("transaction_date") or "", "%Y-%m-%d").date()
+            items = int(row.get("item_count") or "")
+            revenue = float(row.get("revenue") or "")
         except ValueError:
-            rejected.append("bad date or number")
+            rejected.append(f"row {row_num}: bad date or number")
+            continue
+
+        if not math.isfinite(revenue):
+            rejected.append(f"row {row_num}: bad date or number")
             continue
 
         if items < 0 or revenue < 0:
-            rejected.append("negative item count or revenue")
+            rejected.append(f"row {row_num}: negative item count or revenue")
             continue
 
         clean.append(TransactionRecord(branch_id, date, tier, items, revenue))
